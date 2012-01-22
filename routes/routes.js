@@ -175,6 +175,7 @@ exports.index = function(req, res){
 	           legs.push($(leg));
 	        });
          }
+
          res.render('index', {title: itin.fromPlace + ' to ' + itin.toPlace, legs: legs, 
 			                  fromPlace: itin.fromPlace, toPlace: itin.toPlace,
 			                  reverse: reverse, stopId: tp.find('leg from stopId').first().text()});
@@ -233,6 +234,9 @@ exports.newUrl = function (req, res) {
    data.toPlace   = req.query.toPlace;
    // delete after 24 hours
    data.lifetime  = new Date().getTime() + 24 * 60 * 60 * 1000;
+
+   res.header("Access-Control-Allow-Origin", "*");
+   res.header("Access-Control-Allow-Headers", "X-Requested-With");
 
    if (isValid(data)) {
       itineraries[code] = data;

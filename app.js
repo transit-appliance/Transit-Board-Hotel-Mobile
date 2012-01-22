@@ -35,5 +35,5 @@ app.get('/transit/:title/:bksid', routes.transitmap);
 app.get('/walk/:title/:from/:to', routes.walkmap);
 app.get('/:id', routes.index);
 
-app.listen(3000);
+app.listen(process.env.PORT || 3000);
 console.log("Express server listening on port %d in %s mode", app.address().port, app.settings.env);

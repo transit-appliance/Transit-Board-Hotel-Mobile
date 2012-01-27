@@ -44,6 +44,40 @@ setInterval(function () {
 }, 30 * 60 * 1000);
 
 /**
+ * Parse out the time from the TriMet JSON WS.
+ */
+function parseISOTime (isotime) {
+    var year = isotime.slice(0, 4);
+    var mo = Number(isotime.slice(5,7)) - 1; // Jan is 0 in JS
+    var day = isotime.slice(8, 10)
+    var hour = isotime.slice(11, 13);
+    var min = isotime.slice(14, 16);
+    // Must be number or will be interpreted as tz
+    var sec = Number(isotime.slice(17,18));
+    // Should get TriMet's TZ from GTFS agency defn, in case Oregon makes its own time
+    // (e.g. America/Portland)
+    return new time.Date(year, mo, day, hour, min, sec, 'America/Los_Angeles');
+}
+
+/**
+ * get a time like 8:41 pm
+ * @param {Date} the date/time
+ * @returns {String} a human time
+*/
+function makeHumanTime(theDate) {
+   var hour = theDate.getHours() % 12;
+   var mins = theDate.getMinutes();
+   
+   if (mins < 10) mins = '0' + mins;
+
+   if (hour == 0) hour = 12;
+   if (theDate.getHours() >= 12) var ap = 'pm';
+   else                          var ap = 'am';
+
+   return hour + ':' + mins + ' ' + ap;
+}
+
+/**
  * get a trip plan from the TriMet WS
  * @param {object} itin the itinerary
  * @param {function} cb the callback
@@ -52,16 +86,7 @@ function getTripPlan(itin, cb) {
    var now = new time.Date();
    now.setTimezone('America/Los_Angeles');
 
-   var hour = now.getHours() % 12;
-   var mins = now.getMinutes();
-   
-   if (mins < 10) mins = '0' + mins;
-
-   if (hour == 0) hour = 12;
-   if (now.getHours() >= 12) var ap = 'pm';
-   else                      var ap = 'am';
-
-   var rtime = hour + ':' + mins + ' ' + ap;
+    var rtime = makeHumanTime(now);
 
    // build the URL
    params = {
@@ -77,13 +102,9 @@ function getTripPlan(itin, cb) {
    // http://stackoverflow.com/questions/6554039/how-do-i-url-encode-something-in-node-js
    var qs = querystring.stringify(params);
    var wsurl = 'http://developer.trimet.org/ws/V1/trips/tripplanner?' + qs;
-   
-   console.log(wsurl);
 
    request(wsurl, function (err, res, body) {
       if (!err && res.statusCode == 200) {
-         console.log(body);
-
          // choose the best itinerary
          // should probably try to share code with tbdhotel.js, but this is a 
          // bit different because we never throw itineraries out but only cost against them.
@@ -109,10 +130,6 @@ function getTripPlan(itin, cb) {
 	        var isFreqService = true;
 	        itin.find('leg route internalNumber').each(function () {
 	           if ($.inArray($(this).text(), freqService) == -1) {
-	              console.log('route ' + 
-			                  itin.find('leg route internalNumber')
-			                  .first().text() +
-			                  ' is not Frequent Service');
 	              isFreqService = false;
 	           }
 	        });
@@ -340,10 +357,6 @@ exports.transitmap = function (req, res) {
          $.each(data.results[0].points, function (ind, pt) {
 	        var point = new Proj4js.Point(pt.x, pt.y);
 	        Proj4js.transform(from_proj, to_proj, point);
-	        // commented out because it produces thousands upon 
-	        // thousands of lines of output
-	        console.log('transformed ' + pt.x + ',' + pt.y + ' to ' +
-		                point.x + ',' + point.y);
 	        the_geom.push(point.y + ',' + point.x);
 
 	        if (point.x < bbox.left) bbox.left = point.x;
@@ -366,4 +379,47 @@ exports.transitmap = function (req, res) {
          res.render('map', {title: req.param('title'), imgurl: imgurl, referrer: req.headers['referer']});
       }
    });
+};
+
+/**
+ * Get real-time arrivals.
+ */
+exports.realtime = function (req, res) {
+    var params = {
+        appID: '828B87D6ABC0A9DF142696F76',
+        locIDs: req.param('stopId'),
+        json: true
+    };
+
+    var url = 'http://developer.trimet.org/ws/V1/arrivals?' +
+        querystring.stringify(params);
+    
+    request(url, function (err, resp, body) {
+        if (!err && resp.statusCode == 200) {
+
+            var results = JSON.parse(body);
+            var arrivals = [];
+            $.each(results.resultSet.arrival, function (ind, arr) {
+                // get rid of spaces, there have been whitespace
+                // issues before
+                if (arr.fullSign.replace(/ /g, '') == req.param('line').replace(/ /g, '')) {
+                    var arrTime = parseISOTime(arr.estimated);
+                    arrivals.push(makeHumanTime(arrTime));
+                }
+            });
+
+            var active = parseISOTime(results.resultSet.queryTime);
+            var activeh = makeHumanTime(active);
+            
+            // refresh it here, every minute
+            res.header('Refresh', '60');
+
+            res.render('realtime', {valid: activeh, arrivals: arrivals.join(', '), tripName: req.param('line'), stopId: req.param('stopId'), title: 'Real-Time Arrivals',
+                                    // sic
+                                    referrer: req.headers['referer']});
+        }
+        else {
+          res.end('');
+        }
+    });    
 };

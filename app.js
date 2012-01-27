@@ -33,6 +33,7 @@ app.get('/new', routes.newUrl);
 // :bksid is the parameter for lineURL to the TriMet server
 app.get('/transit/:title/:bksid', routes.transitmap);
 app.get('/walk/:title/:from/:to', routes.walkmap);
+app.get('/realtime/:stopId/:name/:line', routes.realtime);
 app.get('/:id', routes.index);
 
 app.listen(process.env.PORT || 3000);

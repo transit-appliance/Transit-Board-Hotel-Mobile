@@ -11,29 +11,18 @@
     <%- partial('leg', {collection: legs}) %>
   </ul>
 
-  <a href="#realPage" data-role="button" data-rel="dialog" data-transition="pop">Real-Time Predictions</a>
-
   <% if (!reverse) { %>
      <a href="?reverse=true" data-role="button">Reverse Trip</a>
   <% } else { %>
      <a href="?reverse=false" data-role="button">Reverse Trip</a>
   <% } %>
+  <a href="http://m.trimet.org" data-role="button">TriMet Mobile Site</a>
+  <a href="tel:5032387433" data-role="button">Call TriMet (503-238-RIDE)</a>
 </div>
 
-<div data-role="real-time" id="realPage">
-  <!-- We just put in a link to Transit Tracker. On mobile devices that support it, this will be replaced with the actual arrivals. -->
-  <span id="realTimeArrivals">
-    View real-time arrivals on 
-    <a href="http://trimet.org/arrivals/small/tracker?locationID=<%= stopId %>">
-       TriMet's Transit Tracker
-    </a>
-  </span>
-  <a href="#tripPage" data-rel="back" data-role="button"
-     data-icon="back">Return to trip</a>
-</div>
 <% } else { %> <!-- no trip plan found -->
 Bother, we couldn't find a trip to <%= toPlace %>. The <a href="http://m.trimet.org">TriMet Mobile Site</a> might have a suggestion,
-or you could call TriMet at <a href="tel:+15032387433">+1-503-238-RIDE (7433)</a>.
+or you could call TriMet at <a href="tel:5032387433">503-238-RIDE (7433)</a>.
 </div> <!-- close the div that is inside the if -->
 <% } %>
 

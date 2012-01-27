@@ -1,0 +1,24 @@
+<script type="text/javascript">
+  // <!--
+  // refresh the page after 65 seconds, if the refresh header doesn't
+  // get there first
+  setInterval(location.reload, 60 * 1000);
+  // -->
+</script>
+
+<div data-role="real-time" id="realPage">
+  <!-- We just put in a link to Transit Tracker. On mobile devices that support it, this will be replaced with the actual arrivals. -->
+  <span id="realTimeArrivals">
+    
+    <%= tripName %> at <%= arrivals %>.<br/>
+
+    Last update: <%= valid %> Pacific Time<br/>
+
+    Or, view real-time arrivals on 
+    <a href="http://trimet.org/arrivals/small/tracker?locationID=<%= stopId %>">
+       TriMet's Transit Tracker
+    </a>
+  </span>
+  <a href="<%= referrer %>" data-rel="back" data-role="button"
+     data-icon="back" onclick="history.back(); return false;">Back to Trip Plan</a>
+</div>
